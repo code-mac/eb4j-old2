@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,13 @@ public class MockAccessor implements Accessor {
         this.querier = Objects.requireNonNull(querier);
     }
 
-    @Override
-    public void access() throws Exception {
-        connectLock.lockInterruptibly();
-    }
+    //    public void access() {
+    //        try {
+    //            connectLock.lockInterruptibly();
+    //        } catch (InterruptedException e) {
+    //            e.printStackTrace();
+    //        }
+    //    }
 
     @Override
     public Querier getQuerier() {
@@ -59,8 +62,7 @@ public class MockAccessor implements Accessor {
         return connectLock.isLocked();
     }
 
-    @Override
-    public void close() throws Exception {
-        connectLock.unlock();
-    }
+    //    public void close() {
+    //        connectLock.unlock();
+    //    }
 }

@@ -1,12 +1,18 @@
-group 'com.apehat'
-version '1.0-SNAPSHOT'
-
-apply plugin: 'java'
-apply plugin: 'idea'
-
-repositories {
-    mavenCentral()
-}
+/*
+ * Copyright (c) 2018 Apehat.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 configure(allprojects) { project ->
 
@@ -14,12 +20,19 @@ configure(allprojects) { project ->
     version '1.0-SNAPSHOT'
 
     apply plugin: 'java'
+    apply plugin: 'java-library'
 
-    dependencies {
-        testCompile group: 'org.testng', name: 'testng', version: '6.14.3'
+    apply plugin: 'idea'
+
+    repositories {
+        mavenCentral()
     }
 
-    ext.moduleName = 'com.apehat.' + project.name.replace('-', '.')
+    dependencies {
+        testImplementation('org.testng:testng:6.14.3')
+    }
+
+    def moduleName = 'com.apehat.' + project.name.replace('-', '.')
 
     compileJava {
         sourceCompatibility = 10
@@ -43,8 +56,8 @@ configure(allprojects) { project ->
         doFirst {
             options.compilerArgs = [
                     '--module-path', classpath.asPath,
-                    '--add-modules', 'org.testng',
-                    '--add-reads', "$moduleName=org.testng",
+                    '--add-modules', 'testng',
+                    '--add-reads', "$moduleName=testng",
                     '--patch-module', "$moduleName=" + files(sourceSets.test.java.srcDirs).asPath,
             ]
             classpath = files()
@@ -57,7 +70,7 @@ configure(allprojects) { project ->
             jvmArgs = [
                     '--module-path', classpath.asPath,
                     '--add-modules', 'ALL-MODULE-PATH',
-                    '--add-reads', "$moduleName=org.testng",
+                    '--add-reads', "$moduleName=org.testng.testng",
                     '--patch-module', "$moduleName=" + files(sourceSets.test.java.outputDir).asPath,
             ]
             classpath = files()

@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,11 @@ public class StoreCommanderTest {
 
     @Test
     public void testAdd() throws Exception {
-        try (Accessor accessor = store.getAccessor(ACCESS_TOKEN);) {
-            accessor.access();
-            StoreCommander storeCommander = accessor.getCommander();
-            storeCommander.store("1");
-            Querier querier = accessor.getQuerier();
+        Accessor<?> accessor = store.access(ACCESS_TOKEN);
+        try (StoreCommander commander = accessor.getCommander()) {
+            commander.store("1");
+        }
+        try (Querier querier = accessor.getQuerier()) {
             int size = querier.size();
             assertEquals(1, size);
         }

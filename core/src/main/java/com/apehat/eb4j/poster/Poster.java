@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,10 +38,6 @@ public interface Poster {
     String id();
 
     void post(Event event, Iterable<Subscriber> subscribers);
-
-    @Deprecated
-    @NotNull
-    Descriptor toDescriptor();
 
     @NotNull
     State state();

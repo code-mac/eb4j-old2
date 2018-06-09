@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package com.apehat.eb4j.mock;
 
 import com.apehat.eb4j.Callback;
-import com.apehat.eb4j.ClassEventType;
 import com.apehat.eb4j.EventBusTest;
-import com.apehat.eb4j.event.EventType;
+import com.apehat.eb4j.event.ClassEventType;
 import com.apehat.eb4j.event.Event;
+import com.apehat.eb4j.event.EventType;
 import com.apehat.eb4j.subscription.Subscriber;
 
 import java.util.Objects;

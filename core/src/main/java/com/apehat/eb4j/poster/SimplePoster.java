@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,10 +63,5 @@ public class SimplePoster implements Poster {
 
     private void makeWaiting() {
         state = State.WAITING;
-    }
-
-    @Override
-    public Descriptor toDescriptor() {
-        return null;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class MockStore implements Store {
     }
 
     @Override
-    public synchronized Accessor getAccessor(String accessToken) throws IllegalAccessException {
+    public synchronized Accessor access(String accessToken) throws IllegalAccessException {
         if (!Objects.equals(this.accessToken, accessToken)) {
             throw new IllegalAccessException();
         }
@@ -60,6 +60,11 @@ public class MockStore implements Store {
 
         @Override
         public void remove(Object value) {
+
+        }
+
+        @Override
+        public void close() {
 
         }
     }
@@ -78,6 +83,11 @@ public class MockStore implements Store {
         @Override
         public Collection values() {
             return null;
+        }
+
+        @Override
+        public void close() {
+
         }
     }
 }

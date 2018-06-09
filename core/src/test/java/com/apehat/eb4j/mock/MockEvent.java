@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.apehat.eb4j.EventBusTest;
 import com.apehat.eb4j.event.ClassEventType;
 import com.apehat.eb4j.event.Event;
 import com.apehat.eb4j.event.EventHead;
-import com.apehat.eb4j.source.SourceId;
+import com.apehat.eb4j.source.EventSource;
 
 /**
  * @author hanpengfei
@@ -28,16 +28,11 @@ import com.apehat.eb4j.source.SourceId;
  */
 public class MockEvent implements Event {
     private final EventHead head;
-    private final SourceId sourceId;
+    private final EventSource eventSource;
 
     public MockEvent() {
         this.head = new EventHead(new ClassEventType(EventBusTest.class));
-        this.sourceId = new SourceId() {
-            @Override
-            public String toString() {
-                return EventBusTest.class.getName();
-            }
-        };
+        this.eventSource = new EventSource(EventBusTest.class.getName());
     }
 
     @Override
@@ -51,7 +46,7 @@ public class MockEvent implements Event {
     }
 
     @Override
-    public SourceId source() {
-        return this.sourceId;
+    public EventSource source() {
+        return this.eventSource;
     }
 }

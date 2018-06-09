@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,12 @@ public class StoreTest {
 
     @Test
     public void testGetConnection() throws IllegalAccessException {
-        Accessor accessor = store.getAccessor(ACCESS_TOKEN);
+        Accessor accessor = store.access(ACCESS_TOKEN);
         assert accessor != null;
     }
 
     @Test(expectedExceptions = IllegalAccessException.class)
     public void testGetConnectionWithInvaildToken() throws IllegalAccessException {
-        store.getAccessor(UUID.randomUUID().toString());
+        store.access(UUID.randomUUID().toString());
     }
 }
