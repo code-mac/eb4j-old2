@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,28 @@
 
 package com.apehat.eb4j.source;
 
+import java.util.Objects;
+
 /**
  * The event source id, be used to identify event publisher.
  *
  * @author hanpengfei
  * @since 1.0
  */
-public interface SourceId {}
+public final class EventSource {
+    private final String id;
+
+
+    public EventSource(String id) {
+        this.id = Objects.requireNonNull(id);
+    }
+
+    public String id() {
+        return id;
+    }
+
+    @Override
+    public String toString() {
+        return "EventSource{" + "id='" + id + '\'' + '}';
+    }
+}
