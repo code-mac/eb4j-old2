@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public final class EventBus {
      * The subscriber filter, be used to filter subscribers.
      * <p>
      * May can open this filed to user;
-     * Mat can use filter chain, too
+     * May can use filter chain, too
      */
     private final SubscriberFilter subscriberFilter = new EventTypeFilter();
 
@@ -71,12 +71,10 @@ public final class EventBus {
         final String accessToken = UUID.randomUUID().toString();
         // by use private access token, ensure store cannot be access by others
         try {
-            this.eventCacheAccessor = builder.eventCacheFactory.newCache(accessToken).getAccessor(accessToken);
-            this.eventQueueAccessor = builder.eventQueueFactory.newStore(accessToken).getAccessor(accessToken);
-            this.subscriberCacheAccessor = builder.subscriberCacheFactory.newCache(accessToken)
-                                                                         .getAccessor(accessToken);
-            this.subscriberStoreAccessor = builder.subscriberStoreFactory.newStore(accessToken)
-                                                                         .getAccessor(accessToken);
+            this.eventCacheAccessor = builder.eventCacheFactory.newCache(accessToken).access(accessToken);
+            this.eventQueueAccessor = builder.eventQueueFactory.newStore(accessToken).access(accessToken);
+            this.subscriberCacheAccessor = builder.subscriberCacheFactory.newCache(accessToken).access(accessToken);
+            this.subscriberStoreAccessor = builder.subscriberStoreFactory.newStore(accessToken).access(accessToken);
         } catch (IllegalAccessException e) {
             throw new ExceptionInInitializerError(e);
         }
@@ -101,14 +99,10 @@ public final class EventBus {
         if (event == null) {
             throw new NullPointerException();
         }
-        // lock cache by access() method
-        eventCacheAccessor.access();
-        eventCacheAccessor.getCommander().cache(event);
-
-        // flush cache to event queue
-        if (!eventCacheAccessor.getQuerier().isFlushing()) {
-            eventCacheAccessor.getCommander().flushTo(eventQueueAccessor);
+        try (CacheCommander<Event> commander = eventCacheAccessor.getCommander()) {
+            commander.cache(event);
         }
+        flushCache2EventQueue();
     }
 
     /**
@@ -117,31 +111,12 @@ public final class EventBus {
      * @param event the event to publish
      * @throws InterruptedException the current be interrupted
      */
-    public void publish(Event event) throws Exception {
+    public void publish(Event event) throws InterruptedException {
         if (event == null) {
             throw new NullPointerException();
         }
 
-        // get subscribers from cache
-        // the first time to get form cache
-        // can ensure needn't to filter with timestamp
-        eventCacheAccessor.access();
-        final Collection<Subscriber> cachedSubscribers = subscriberCacheAccessor.getQuerier().values();
-
-        // the cachedSubscribers must be set to unmodifiable
-        // prevent filter modify it
-        final Collection<Subscriber> unmodifiableCachedSubscribers = Collections
-                .unmodifiableCollection(cachedSubscribers);
-
-        final Set<Subscriber> subscribers = new LinkedHashSet<>(
-                subscriberFilter.doFilter(event, unmodifiableCachedSubscribers));
-
-        // get subscribers of subscriberStore
-        // must ensure subscriberStore isn't be modifying
-        subscriberStoreAccessor.access();
-        final Collection<Subscriber> storedSubscribers = subscriberStoreAccessor.getQuerier().subscribersOf(event);
-
-        subscribers.addAll(storedSubscribers);
+        final Collection<Subscriber> subscribers = subscriberOf(event);
 
         final ReentrantLock postLock = this.postLock;
         postLock.lockInterruptibly();
@@ -152,44 +127,6 @@ public final class EventBus {
         } finally {
             postLock.unlock();
         }
-    }
-
-    /**
-     * @see com.apehat.store.CacheCommander#flushTo(Store)
-     * @see com.apehat.store.CacheCommander#flushTo(Accessor)
-     */
-    @Deprecated
-    private void flush() {
-    }
-
-    // 异步进行事件的发送
-    private void publish() throws InterruptedException {
-        // 此处需要锁定事件队列与订阅者仓储，
-        // 必须为可重入锁，防止事件队列与订阅者仓储是同一个实现
-
-        // 必须先获取 publishLock， 一个线程防止锁队列后，未获取方法锁，造成死锁问题
-        final ReentrantLock publishLock = this.publishLock;
-        publishLock.lockInterruptibly();
-
-        eventQueueAccessor.access();
-        EventQueueQuerier querier = eventQueueAccessor.getQuerier();
-        EventQueueCommander commander = eventQueueAccessor.getCommander();
-
-        try {
-            subscriberStoreAccessor.access();
-            // 当每一次发布循环完成后，将进行信号的传输
-            while (querier.hasNext()) {
-                Event event;
-                Collection<Subscriber> subscribers;
-                event = commander.nextEvent();
-                subscribers = subscriberStoreAccessor.getQuerier().subscribersOf(event);
-                asyncPoster.post(event, subscribers);
-            }
-        } finally {
-            publishLock.unlock();
-        }
-        // 发送信号
-        // 也可以进行flush的调用
     }
 
     /**
@@ -215,9 +152,8 @@ public final class EventBus {
 
         final ReentrantLock subscriberRegisterLock = this.registerLock;
         subscriberRegisterLock.lockInterruptibly();
-        try {
-            subscriberCacheAccessor.access();
-            subscriberCacheAccessor.getCommander().cache(subscriber);
+        try (CacheCommander<Subscriber> commander = subscriberCacheAccessor.getCommander()) {
+            commander.cache(subscriber);
         } finally {
             subscriberRegisterLock.unlock();
         }
@@ -242,18 +178,90 @@ public final class EventBus {
         // 但是该实现不应该由EventBus来负责，而是仓储的责任
     }
 
+    private void flushCache2EventQueue() {
+        try (CacheQuerier<?> querier = eventCacheAccessor.getQuerier()) {
+            if (!querier.isFlushing()) {
+                try (CacheCommander<Event> commander = eventCacheAccessor.getCommander()) {
+                    commander.flushTo(eventQueueAccessor);
+                }
+            }
+        }
+    }
+
+
+    private Collection<Subscriber> subscriberOf(Event event) {
+        final Set<Subscriber> subscribers = new LinkedHashSet<>(subscribersInCache(event));
+        subscribers.addAll(subscribersInStore(event));
+        return subscribers;
+    }
+
+    private Collection<Subscriber> subscribersInCache(Event event) {
+        // get subscribers from cache
+        // the first time to get form cache
+        // can ensure needn't to filter with timestamp
+        //        eventCacheAccessor.access();
+        final Collection<Subscriber> cachedSubscribers;
+        try (Querier<Subscriber> querier = subscriberCacheAccessor.getQuerier()) {
+            cachedSubscribers = querier.values();
+        }
+        // the cachedSubscribers must be set to unmodifiable
+        // prevent filter modify it
+        final Collection<Subscriber> unmodifiableCachedSubscribers = Collections
+                .unmodifiableCollection(cachedSubscribers);
+        return new LinkedHashSet<>(subscriberFilter.doFilter(event, unmodifiableCachedSubscribers));
+    }
+
+    private Collection<Subscriber> subscribersInStore(Event event) {
+        try (SubscriberStoreQuerier querier = subscriberStoreAccessor.getQuerier()) {
+            return querier.subscribersOf(event);
+        }
+    }
+
+    // 异步进行事件的发送
+    private void publish() throws InterruptedException {
+        // 此处需要锁定事件队列与订阅者仓储，
+        // 必须为可重入锁，防止事件队列与订阅者仓储是同一个实现
+
+        // 必须先获取 publishLock， 一个线程防止锁队列后，未获取方法锁，造成死锁问题
+        final ReentrantLock publishLock = this.publishLock;
+        publishLock.lockInterruptibly();
+
+        //        eventQueueAccessor.access();
+        try (EventQueueQuerier querier = eventQueueAccessor.getQuerier();
+             EventQueueCommander commander = eventQueueAccessor.getCommander()) {
+            try {
+                //                subscriberStoreAccessor.access();
+                // 当每一次发布循环完成后，将进行信号的传输
+                while (querier.hasNext()) {
+                    Event event;
+                    Collection<Subscriber> subscribers;
+                    event = commander.nextEvent();
+                    subscribers = subscriberStoreAccessor.getQuerier().subscribersOf(event);
+                    asyncPoster.post(event, subscribers);
+                }
+            } finally {
+                publishLock.unlock();
+            }
+        }
+        // 发送信号
+        // 也可以进行flush的调用
+    }
+
     private void markUp(Subscriber subscriber) {
     }
 
     private boolean isRegistered(Subscriber subscriber) {
-        // 进行仓储与缓存的检查
-        subscriberCacheAccessor.access();
-        if (subscriberCacheAccessor.getQuerier().contains(subscriber)) {
-            return true;
-        } else {
-            subscriberStoreAccessor.access();
-            return subscriberStoreAccessor.getQuerier().contains(subscriber);
+        try (Querier<Subscriber> querier = subscriberCacheAccessor.getQuerier()) {
+            if (querier.contains(subscriber)) {
+                return true;
+            }
         }
+        try (Querier<Subscriber> querier = subscriberStoreAccessor.getQuerier()) {
+            if (querier.contains(subscriber)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public final static class Builder {
