@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,5 +31,5 @@ public interface Store<T> {
      * @return the accessor of the current store
      * @throws IllegalAccessException the token is invalid
      */
-    Accessor<T> getAccessor(String accessToken) throws IllegalAccessException;
+    Accessor<T> access(String accessToken) throws IllegalAccessException;
 }
