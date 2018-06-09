@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,5 +23,5 @@ package com.apehat.store;
 public interface Cache<T> extends Store<T> {
 
     @Override
-    CacheAccessor<T> getAccessor(String accessToken) throws IllegalAccessException;
+    CacheAccessor<T> access(String accessToken) throws IllegalAccessException;
 }
