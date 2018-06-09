@@ -1,0 +1,6 @@
+rootProject.name = 'eb4j'
+include 'core'
+findProject(':core')?.name = 'eb4j-core'
+include 'annotation'
+findProject(':annotation')?.name = 'eb4j-annotation'
+
