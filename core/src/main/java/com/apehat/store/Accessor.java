@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,7 @@ package com.apehat.store;
  * @author hanpengfei
  * @since 1.0
  */
-public interface Accessor<T> extends AutoCloseable {
-
-    // TODO  考虑资源的关闭问题，因为该操作有可能被用于加锁
-    void access();
+public interface Accessor<T> {
 
     Querier<T> getQuerier();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright Apehat.com
+ * Copyright (c) 2018 Apehat.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,14 @@ import java.util.Collection;
  * @author hanpengfei
  * @since 1.0
  */
-public interface Querier<T> {
+public interface Querier<T> extends AutoCloseable {
 
     boolean contains(T value);
 
     int size();
 
     Collection<T> values();
+
+    @Override
+    void close();
 }
